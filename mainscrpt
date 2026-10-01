@@ -1,0 +1,621 @@
+--==============================================================
+-- Xct Hub - Flee The Facility
+-- Versão sem key | Interface renovada | +Funções
+--==============================================================
+
+local MAIN_SCRIPT = [=[
+--═══════════════════════════════════════════════════════════════
+--  Xct Hub | Flee The Facility
+--  Creditos: Base original de ReefHub, reformulado por Xct
+--═══════════════════════════════════════════════════════════════
+
+local ui = loadstring(game:HttpGet("https://raw.githubusercontent.com/ghostofcelleron/Celeron/refs/heads/main/daff"))()
+
+local win = ui:Create({
+    Name = "Xct Hub",
+    ThemeColor = Color3.fromRGB(20, 12, 40),
+    ThemeGradient = Color3.fromRGB(140, 20, 200),
+    StartupSound = "rbxassetid://6958727243",
+    ThemeFont = Enum.Font.GothamBold,
+    ToggledSideBar = true
+})
+
+local maintab  = win:Tab("Principal")
+local tpstab   = win:Tab("Teleportes")
+local esptab   = win:Tab("Visual")
+local funtab   = win:Tab("Diversos")
+local playertab= win:Tab("Jogador")
+local helptab  = win:Tab("Info")
+
+maintab:Label("Xct Hub — Script By Xct")
+tpstab:Label("Teleportes gerais do mapa.")
+esptab:Label("Recursos visuais (ESP, etc).")
+funtab:Label("Funções diversas e exploits.")
+playertab:Label("Funções voltadas ao seu personagem.")
+helptab:Label("Controles: Right Alt para mostrar/esconder a GUI.")
+helptab:Label("Creditos: base ReefHub, reformulado por Xct.")
+
+--==============================================================
+-- ESTADO GLOBAL
+--==============================================================
+getgenv().Xct = getgenv().Xct or {}
+getgenv().Xct.lastWalkSpeed = nil
+getgenv().Xct.humanoidConnection = nil
+
+local Players       = game:GetService("Players")
+local RunService    = game:GetService("RunService")
+local StarterGui    = game:GetService("StarterGui")
+local Workspace     = game:GetService("Workspace")
+local CoreGui       = game:GetService("CoreGui")
+local Replicated    = game:GetService("ReplicatedStorage")
+
+local player        = Players.LocalPlayer
+
+--==============================================================
+-- NOTIFICAÇÃO (wrapper bonito)
+--==============================================================
+local function notify(title, text)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "Xct Hub | " .. tostring(title),
+            Text  = tostring(text),
+            Duration = 3
+        })
+    end)
+end
+
+--==============================================================
+-- SPEED (com persistência anti-kick do humanoid)
+--==============================================================
+getgenv().Xct.applySpeed = function()
+    if not getgenv().Xct.lastWalkSpeed then return end
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hum  = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    if hum.WalkSpeed ~= getgenv().Xct.lastWalkSpeed then
+        hum.WalkSpeed = getgenv().Xct.lastWalkSpeed
+    end
+
+    if getgenv().Xct.humanoidConnection then
+        getgenv().Xct.humanoidConnection:Disconnect()
+    end
+
+    getgenv().Xct.humanoidConnection = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+        if hum.WalkSpeed ~= getgenv().Xct.lastWalkSpeed then
+            hum.WalkSpeed = getgenv().Xct.lastWalkSpeed
+        end
+    end)
+end
+
+maintab:Textbox("Velocidade do Jogador", function(v)
+    local n = tonumber(v)
+    if not n then return end
+    if n == 8 then n = 16 end
+    getgenv().Xct.lastWalkSpeed = n
+    getgenv().Xct.applySpeed()
+end)
+
+--==============================================================
+-- JUMP POWER
+--==============================================================
+getgenv().Xct.jumpConnection = nil
+getgenv().Xct.lastJump = nil
+
+getgenv().Xct.applyJump = function()
+    if not getgenv().Xct.lastJump then return end
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hum  = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    hum.UseJumpPower = true
+    hum.JumpPower = getgenv().Xct.lastJump
+
+    if getgenv().Xct.jumpConnection then
+        getgenv().Xct.jumpConnection:Disconnect()
+    end
+
+    getgenv().Xct.jumpConnection = hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
+        if hum.JumpPower ~= getgenv().Xct.lastJump then
+            hum.JumpPower = getgenv().Xct.lastJump
+        end
+    end)
+end
+
+playertab:Textbox("Força do Pulo (Padrão: 50)", function(v)
+    local n = tonumber(v)
+    if not n then return end
+    getgenv().Xct.lastJump = n
+    getgenv().Xct.applyJump()
+end)
+
+--==============================================================
+-- HACK AUTOMÁTICO
+--==============================================================
+maintab:Toggle("Hacking Automatico", "Hacking sempre bem-sucedido, sem QTE.", function()
+    _G.XctAutoHack = not _G.XctAutoHack
+    notify("Hacking Automatico", _G.XctAutoHack and "Ativado." or "Desativado.")
+
+    task.spawn(function()
+        while _G.XctAutoHack do
+            task.wait(0.1)
+            pcall(function()
+                Replicated:WaitForChild("RemoteEvent"):FireServer("SetPlayerMinigameResult", true)
+            end)
+        end
+    end)
+end)
+
+--==============================================================
+-- INFINITE YIELD (NOVO)
+--==============================================================
+funtab:Button("Infinite Yield (Admin)", "Carrega o Infinite Yield — o melhor admin do Roblox.", function()
+    notify("Infinite Yield", "Carregando admin...")
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+end)
+
+--==============================================================
+-- DEX EXPLORER (NOVO)
+--==============================================================
+funtab:Button("Dex Explorer", "Explorador de instâncias do jogo.", function()
+    notify("Dex", "Carregando Dex Explorer...")
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/peyton2465/Dex/master/out.lua"))()
+end)
+
+--==============================================================
+-- FE AUDIO CONTROL (NOVO / mantido)
+--==============================================================
+funtab:Button("FE Audio Control", "Controle de áudio no jogo.", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/3dWP6BW4"))()
+end)
+
+--==============================================================
+-- THIRD PERSON (Beast)
+--==============================================================
+local thirdPersonEnabled = false
+local cameraLoop = nil
+
+maintab:Toggle("Terceira Pessoa Livre", "Permite 3ª pessoa como Beast.", function()
+    thirdPersonEnabled = not thirdPersonEnabled
+
+    if thirdPersonEnabled then
+        notify("Terceira Pessoa", "Ativado.")
+        player.CameraMode = Enum.CameraMode.Classic
+        cameraLoop = RunService.RenderStepped:Connect(function()
+            if player.CameraMode ~= Enum.CameraMode.Classic then
+                player.CameraMode = Enum.CameraMode.Classic
+            end
+        end)
+    else
+        notify("Terceira Pessoa", "Desativado.")
+        if cameraLoop then cameraLoop:Disconnect() cameraLoop = nil end
+    end
+end)
+
+--==============================================================
+-- SELF REVIVE
+--==============================================================
+local lastClickTime = 0
+local clickCooldown = 3
+
+maintab:Button("Self Revive (clique 2x)", "Use como último recurso. Você não poderá hackear depois.", function()
+    local now = tick()
+    if now - lastClickTime <= clickCooldown then
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.Health = 0 end
+        end
+        notify("Self Revive", "Você não pode mais hackear computadores! Mas pode escapar.")
+        lastClickTime = 0
+    else
+        notify("Self Revive", "Clique novamente para confirmar.")
+        lastClickTime = now
+    end
+end)
+
+--==============================================================
+-- JOIN MID-GAME
+--==============================================================
+maintab:Button("Entrar no Meio da Partida", "Teleporta para o mapa durante a partida.", function()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local targetPad = nil
+    for _, model in pairs(Workspace:GetChildren()) do
+        if model:IsA("Model") then
+            local ct = model:FindFirstChild("ComputerTable")
+            if ct and ct:IsA("Model") then
+                local pad = model:FindFirstChild("OBSpawnPad")
+                if pad and pad:IsA("BasePart") then
+                    targetPad = pad
+                    break
+                end
+            end
+        end
+    end
+    if targetPad then
+        char:SetPrimaryPartCFrame(targetPad.CFrame + Vector3.new(0, 5, 0))
+        notify("Join Mid-Game", "Teleportado.")
+    else
+        notify("Join Mid-Game", "Spawn pad não encontrado.")
+    end
+end)
+
+--==============================================================
+-- ESP JOGADORES
+--==============================================================
+local playerESPEnabled = false
+local playerConnections = {}
+
+local function applyHighlight(p)
+    if p == player then return end
+    local char = p.Character
+    if not char or not char:IsA("Model") then return end
+
+    local existing = CoreGui:FindFirstChild("XctESP_" .. p.Name)
+
+    if playerESPEnabled then
+        if not existing then
+            local hl = Instance.new("Highlight")
+            hl.Name = "XctESP_" .. p.Name
+            hl.Adornee = char
+            hl.FillColor = Color3.fromRGB(150, 50, 255)
+            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            hl.Parent = CoreGui
+        end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+            hum.NameDisplayDistance = math.huge
+        end
+    else
+        if existing then existing:Destroy() end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
+            hum.NameDisplayDistance = 100
+        end
+    end
+end
+
+esptab:Toggle("ESP Jogadores", function()
+    playerESPEnabled = not playerESPEnabled
+    notify("ESP Jogadores", playerESPEnabled and "Ativado." or "Desativado.")
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        applyHighlight(p)
+    end
+
+    if not playerConnections.added then
+        playerConnections.added = Players.PlayerAdded:Connect(function(p)
+            p.CharacterAdded:Connect(function()
+                if playerESPEnabled then
+                    task.wait(1)
+                    applyHighlight(p)
+                end
+            end)
+        end)
+    end
+end)
+
+--==============================================================
+-- ESP COMPUTADORES
+--==============================================================
+esptab:Toggle("ESP Computadores", function()
+    _G.XctComputerESP = not _G.XctComputerESP
+    notify("ESP Computadores", _G.XctComputerESP and "Ativado." or "Desativado.")
+
+    for _, model in ipairs(Workspace:GetDescendants()) do
+        if model:IsA("Model") and model.Name == "ComputerTable" then
+            local hl = model:FindFirstChild("XctComputerESP")
+            if _G.XctComputerESP then
+                if not hl then
+                    local screenColor = Color3.fromRGB(255, 255, 255)
+                    for _, part in ipairs(model:GetDescendants()) do
+                        if part:IsA("BasePart") and part.Name == "Screen" then
+                            screenColor = part.Color
+                            break
+                        end
+                    end
+                    local newHl = Instance.new("Highlight")
+                    newHl.Name = "XctComputerESP"
+                    newHl.Adornee = model
+                    newHl.FillColor = screenColor
+                    newHl.OutlineColor = Color3.fromRGB(255, 50, 255)
+                    newHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    newHl.Parent = model
+                end
+            elseif hl then
+                hl:Destroy()
+            end
+        end
+    end
+end)
+
+--==============================================================
+-- ESP SAÍDAS
+--==============================================================
+esptab:Toggle("ESP Saídas", function()
+    _G.XctExitESP = not _G.XctExitESP
+    notify("ESP Saídas", _G.XctExitESP and "Ativado." or "Desativado.")
+
+    for _, model in ipairs(Workspace:GetDescendants()) do
+        if model:IsA("Model") and model.Name == "ExitDoor" then
+            local hl = model:FindFirstChild("XctExitESP")
+            if _G.XctExitESP then
+                if not hl then
+                    local newHl = Instance.new("Highlight")
+                    newHl.Name = "XctExitESP"
+                    newHl.Adornee = model.PrimaryPart or model
+                    newHl.FillColor = Color3.fromRGB(255, 220, 0)
+                    newHl.OutlineTransparency = 1
+                    newHl.FillTransparency = 0.4
+                    newHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    newHl.Parent = model
+                end
+            elseif hl then
+                hl:Destroy()
+            end
+        end
+    end
+end)
+
+--==============================================================
+-- ESP FREEZERS (NOVO)
+--==============================================================
+esptab:Toggle("ESP Congeladores", function()
+    _G.XctFreezerESP = not _G.XctFreezerESP
+    notify("ESP Congeladores", _G.XctFreezerESP and "Ativado." or "Desativado.")
+
+    for _, model in ipairs(Workspace:GetDescendants()) do
+        if model:IsA("Model") and model.Name == "FreezePod" then
+            local hl = model:FindFirstChild("XctFreezerESP")
+            if _G.XctFreezerESP then
+                if not hl then
+                    local newHl = Instance.new("Highlight")
+                    newHl.Name = "XctFreezerESP"
+                    newHl.Adornee = model.PrimaryPart or model
+                    newHl.FillColor = Color3.fromRGB(0, 200, 255)
+                    newHl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    newHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    newHl.Parent = model
+                end
+            elseif hl then
+                hl:Destroy()
+            end
+        end
+    end
+end)
+
+--==============================================================
+-- FULLBRIGHT (NOVO)
+--==============================================================
+local oldLighting = nil
+
+esptab:Toggle("Fullbright", function()
+    _G.XctFullbright = not _G.XctFullbright
+    notify("Fullbright", _G.XctFullbright and "Ativado." or "Desativado.")
+
+    local Lighting = game:GetService("Lighting")
+    if _G.XctFullbright then
+        oldLighting = {
+            Brightness = Lighting.Brightness,
+            Ambient = Lighting.Ambient,
+            OutdoorAmbient = Lighting.OutdoorAmbient,
+            FogEnd = Lighting.FogEnd,
+            GlobalShadows = Lighting.GlobalShadows
+        }
+        Lighting.Brightness = 3
+        Lighting.Ambient = Color3.fromRGB(200, 200, 200)
+        Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+    else
+        if oldLighting then
+            Lighting.Brightness = oldLighting.Brightness
+            Lighting.Ambient = oldLighting.Ambient
+            Lighting.OutdoorAmbient = oldLighting.OutdoorAmbient
+            Lighting.FogEnd = oldLighting.FogEnd
+            Lighting.GlobalShadows = oldLighting.GlobalShadows
+        end
+    end
+end)
+
+--==============================================================
+-- TELEPORTES BÁSICOS
+--==============================================================
+local function tpTo(x, y, z)
+    local char = player.Character or player.CharacterAdded:Wait()
+    if char and char.PrimaryPart then
+        char:SetPrimaryPartCFrame(CFrame.new(x, y, z))
+    end
+end
+
+tpstab:Button("Spawn", function() tpTo(111, 8, -414) end)
+tpstab:Button("Votação de Mapa", function() tpTo(157, 4, -344) end)
+tpstab:Button("Caverna", function() tpTo(279, -11, -366) end)
+tpstab:Button("Servidores de Troca (Nível 6+)", function() tpTo(65, 4, -308) end)
+
+--==============================================================
+-- TELEPORTES IN-GAME (Computer / Exit / Freezer)
+--==============================================================
+local function getRoot()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char, char:WaitForChild("HumanoidRootPart")
+end
+
+local function getOrderedModels(name)
+    local models = {}
+    local function scan(parent)
+        for _, obj in ipairs(parent:GetChildren()) do
+            if obj:IsA("Model") and obj.Name == name then
+                table.insert(models, obj)
+            end
+            if #obj:GetChildren() > 0 then scan(obj) end
+        end
+    end
+    scan(Workspace)
+    table.sort(models, function(a, b)
+        local ao = a:GetAttribute("Order") or 0
+        local bo = b:GetAttribute("Order") or 0
+        return ao < bo
+    end)
+    return models
+end
+
+local function TeleportToModel(model)
+    if not model or not model.PrimaryPart then return end
+    local char, root = getRoot()
+    local front = model.PrimaryPart.CFrame.Position + model.PrimaryPart.CFrame.LookVector * 5
+    root.CFrame = CFrame.new(front)
+end
+
+local computerIndex, exitIndex, freezerIndex = 1, 1, 1
+
+tpstab:Label("Áreas In-Game (rotativo).")
+
+tpstab:Button("TP Computador (rotativo)", function()
+    local models = getOrderedModels("ComputerTable")
+    if #models == 0 then notify("TP", "Nenhum computador.") return end
+    TeleportToModel(models[computerIndex])
+    computerIndex = computerIndex + 1
+    if computerIndex > #models then computerIndex = 1 end
+end)
+
+tpstab:Button("TP Saída (rotativo)", function()
+    local models = getOrderedModels("ExitDoor")
+    if #models == 0 then notify("TP", "Nenhuma saída.") return end
+    TeleportToModel(models[exitIndex])
+    exitIndex = exitIndex + 1
+    if exitIndex > #models then exitIndex = 1 end
+end)
+
+tpstab:Button("TP Congelador (rotativo)", function()
+    local models = getOrderedModels("FreezePod")
+    if #models == 0 then notify("TP", "Nenhum congelador.") return end
+    TeleportToModel(models[freezerIndex])
+    freezerIndex = freezerIndex + 1
+    if freezerIndex > #models then freezerIndex = 1 end
+end)
+
+--==============================================================
+-- NOCLIP (NOVO)
+--==============================================================
+local noclipConn = nil
+
+playertab:Toggle("Noclip", "Atravessa paredes.", function()
+    _G.XctNoclip = not _G.XctNoclip
+    notify("Noclip", _G.XctNoclip and "Ativado." or "Desativado.")
+
+    if _G.XctNoclip then
+        noclipConn = RunService.Stepped:Connect(function()
+            local char = player.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+        local char = player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+end)
+
+--==============================================================
+-- INFINITE JUMP (NOVO)
+--==============================================================
+playertab:Toggle("Pulo Infinito", function()
+    _G.XctInfJump = not _G.XctInfJump
+    notify("Pulo Infinito", _G.XctInfJump and "Ativado." or "Desativado.")
+end)
+
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if _G.XctInfJump then
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end
+    end
+end)
+
+--==============================================================
+-- RESPAWN
+--==============================================================
+playertab:Button("Respawnar Personagem", function()
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.Health = 0 end
+    end
+end)
+
+--==============================================================
+-- SERVER HOP (NOVO)
+--==============================================================
+funtab:Button("Server Hop (servidor cheio)", function()
+    notify("Server Hop", "Buscando servidor...")
+    local HttpService = game:GetService("HttpService")
+    local ts = game:GetService("TeleportService")
+    pcall(function()
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        local body = HttpService:JSONDecode(game:HttpGet(url))
+        for _, srv in ipairs(body.data) do
+            if srv.playing < srv.maxPlayers and srv.id ~= game.JobId then
+                ts:TeleportToPlaceInstance(game.PlaceId, srv.id, player)
+                return
+            end
+        end
+        notify("Server Hop", "Nenhum servidor encontrado.")
+    end)
+end)
+
+--==============================================================
+-- REJOIN (NOVO)
+--==============================================================
+funtab:Button("Rejoin (servidor atual)", function()
+    game:GetService("TeleportService"):Teleport(game.PlaceId, player)
+end)
+
+--==============================================================
+-- INFO / CRÉDITOS
+--==============================================================
+helptab:Button("Copiar Discord do Dono", function()
+    if setclipboard then setclipboard("Xct") end
+    notify("Discord", "Username copiado: Xct")
+end)
+
+helptab:Button("Copiar Convite do Discord", function()
+    if setclipboard then setclipboard("https://discord.gg/BeXJBSE9Fn") end
+    notify("Discord", "Convite copiado.")
+end)
+
+helptab:Label("Xct Hub — Reformulado por Xct.")
+helptab:Label("Base original: ReefHub.")
+]=]
+
+--==============================================================
+-- EXECUTOR
+--==============================================================
+local compiler = loadstring or load
+if type(compiler) ~= "function" then
+    warn("[Xct Hub] Executor não suporta loadstring.")
+    return
+end
+
+local ok, fn = pcall(compiler, MAIN_SCRIPT)
+if ok and type(fn) == "function" then
+    pcall(fn)
+else
+    warn("[Xct Hub] Falha ao compilar.")
+end
